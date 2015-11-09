@@ -74,8 +74,12 @@ int main(){
     //messages, so we will just ignore them here)
     if(recvaddr.sll_pkttype==PACKET_OUTGOING)
       continue;
+    
     //start processing all others
-    printf("Got a %d byte packet\n", n);
+    //printf("Got a %d byte packet\n", n);
+    printf("Got packet from interface: %d, on router 1\n", recvaddr.sll_ifindex);
+    printf("The length of the address is: %c\n", recvaddr.sll_halen);
+    printf("Physical layer address is: %c\n", recvaddr.sll_addr[0]);
     
     //what else to do is up to you, you can send packets with send,
     //just like we used for TCP sockets (or you can use sendto, but it
