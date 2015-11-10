@@ -72,14 +72,20 @@ int main(){
     //ignore outgoing packets (we can't disable some from being sent
     //by the OS automatically, for example ICMP port unreachable
     //messages, so we will just ignore them here)
-    if(recvaddr.sll_pkttype==PACKET_OUTGOING)
+    if(recvaddr.sll_pkttype==PACKET_OUTGOING){
       continue;
-    
+    }
     //start processing all others
     //printf("Got a %d byte packet\n", n);
-    printf("Got packet from interface: %d, on router 1\n", recvaddr.sll_ifindex);
-    printf("The length of the address is: %c\n", recvaddr.sll_halen);
-    printf("Physical layer address is: %c\n", recvaddr.sll_addr[0]);
+
+      if ((((buf[12]) << 8) + buf[13]) == ETH_P_ARP){
+		printf("Recieved ARP request\n");
+	}	
+      printf("Got packet from interface: %d, on router 1\n", recvaddr.sll_ifindex);
+      printf("The length of the address is: %u\n", recvaddr.sll_halen);
+      printf("Physical layer address (not in HEX) is: %u:%u:%u:%u:%u:%u\n\n", recvaddr.sll_addr[0], 
+	recvaddr.sll_addr[1], recvaddr.sll_addr[2], recvaddr.sll_addr[3],
+	recvaddr.sll_addr[4], recvaddr.sll_addr[5]);
     
     //what else to do is up to you, you can send packets with send,
     //just like we used for TCP sockets (or you can use sendto, but it
