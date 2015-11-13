@@ -7,11 +7,18 @@
 #include <ifaddrs.h>
 #include <cstring>
 #include <arpa/inet.h>
+#include <string.h>
+#include <iomanip>
+#include <linux/if_ether.h>
+#include <netinet/if_ether.h>
+//#include <>
+//#include <>
 
 int main(){
   int packet_socket;
   //get list of interfaces (actually addresses)
   struct ifaddrs *ifaddr, *tmp;
+  char *interface, *src_ip, *dst_ip, *rec_ip, *target;
   if(getifaddrs(&ifaddr)==-1){
     perror("getifaddrs");
     return 1;
@@ -86,13 +93,48 @@ int main(){
       printf("Physical layer address (not in HEX) is: %u:%u:%u:%u:%u:%u\n\n", recvaddr.sll_addr[0], 
 	recvaddr.sll_addr[1], recvaddr.sll_addr[2], recvaddr.sll_addr[3],
 	recvaddr.sll_addr[4], recvaddr.sll_addr[5]);
-    
+
+	struct sockaddr_ll device = {0};	
+  
+	/*const unsigned char dst_mac[] = {
+	recvaddr.sll_addr[0], recvaddr.sll_addr[1], recvaddr.sll_addr[2], recvaddr.sll_addr[3], recvaddr.sll_addr[4], recvaddr.sll_addr[5]};*/
+
+	const unsigned char dst_mac[] = {0x56, 0xd7, 0x61, 0x4b, 0x6b, 0xc4};
+
+	device.sll_family = AF_PACKET;
+	device.sll_ifindex = recvaddr.sll_ifindex;
+	device.sll_halen = recvaddr.sll_halen;
+	device.sll_protocol = htons(ETH_P_ARP);
+	memcpy(device.sll_addr, dst_mac, recvaddr.sll_halen);
+	
+	struct ether_arp requ;
+	requ.arp_hrd = htons (ARPHRD_ETHER);
+	requ.arp_pro = htons (ETH_P_IP);
+	requ.arp_hln = ETHER_ADDR_LEN;
+	requ.arp_pln = sizeof(in_addr_t);
+	requ.arp_op = htons (ARPOP_REQUEST);
+	memset(&requ.arp_tha, 0, sizeof(requ.arp_tha));
+
+	const char* target = "10.1.0.3";
+	struct in_addr target_addr = {0};
+	if (!inet_aton(target,&target_addr)) {
+    		printf("%s is not a valid IP address",target);
+	}
+	memcpy(&requ.arp_tpa,&target_addr.s_addr,sizeof(requ.arp_tpa));
+
+	if (sendto(packet_socket,&requ,sizeof(requ),0,(struct sockaddr*)&device,sizeof(device)) < 0) {
+    		printf("%s",strerror(errno));
+	}
+
     //what else to do is up to you, you can send packets with send,
     //just like we used for TCP sockets (or you can use sendto, but it
     //is not necessary, since the headers, including all addresses,
     //need to be in the buffer you are sending)
     
   }
+
+
+
   //exit
   return 0;
 }
