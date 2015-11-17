@@ -22,6 +22,30 @@
 #include <iomanip>
 #include <linux/if_ether.h>
 #include <netinet/if_ether.h>
+#include <stdlib.h>
+#include <iostream>
+#include <cstdlib>
+#include <stdio.h>
+
+unsigned char toHex(unsigned char c){
+	char hexstring[2];
+	sprintf(hexstring, "%X", (int)c);
+	//std::cout << hexstring[0] + hexstring[1] + ":"<< std::endl;
+	return *hexstring;
+}
+
+/* 
+ * this function generates header checksums 
+ * This is an adaptation from Mixter's networking tutorial
+ */
+unsigned short checkSum (unsigned short *buf, int n){
+	unsigned long sum;
+	for (sum = 0; n > 0; n--)
+	sum += *buf++;
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
+	return ~sum;
+}
 
 int main(){
   int packet_socket;
@@ -82,7 +106,12 @@ int main(){
 	/*const unsigned char dst_mac[] = {
 	recvaddr.sll_addr[0], recvaddr.sll_addr[1], recvaddr.sll_addr[2], recvaddr.sll_addr[3], recvaddr.sll_addr[4], recvaddr.sll_addr[5]};*/
 
-	const unsigned char dst_mac[] = {0x56, 0xd7, 0x61, 0x4b, 0x6b, 0xc4};
+	const unsigned char dst_mac[] = {toHex(recvaddr.sll_addr[0]), 
+					toHex(recvaddr.sll_addr[1]),
+					toHex(recvaddr.sll_addr[2]),
+					toHex(recvaddr.sll_addr[3]),
+					toHex(recvaddr.sll_addr[4]),
+					toHex(recvaddr.sll_addr[5])};
 
 	device.sll_family = AF_PACKET;
 	device.sll_ifindex = recvaddr.sll_ifindex;
@@ -97,6 +126,11 @@ int main(){
 	requ.arp_pln = sizeof(in_addr_t);
 	requ.arp_op = htons (ARPOP_REQUEST);
 	memset(&requ.arp_tha, 0, sizeof(requ.arp_tha));
+
+	// Calculate the header checksum 
+	// 320 = 320 bits, 20 bytes for the ip header and 20 bytes for the tcp header
+	unsigned short csum = checkSum((unsigned short *) buf, 320 >> 1);                               
+        printf("Checksum is: %d\n", csum);	
 
 	const char* target = "10.1.0.3";
 	struct in_addr target_addr = {0};
