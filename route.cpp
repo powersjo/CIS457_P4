@@ -1,12 +1,12 @@
 /*
  * Project 4 Router.cpp 
  * CIS 457
- * 11/13/2015
+ * 11/17/2015
  * Author(s):
  * Jonathan Powers, Kevin Anderson, Brett Greenman
  * Description:
  * This program recieves packets and knows if it is an ARP request and then sends an 
- * ethernet packet back. 
+ * ethernet packet back. Checksum has also been added. 
  */
 
 #include <sys/socket.h> 
@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <stdio.h>
 
+//This method converts a decimal to hex for MAC addresses from an unsigned char
 unsigned char toHex(unsigned char c){
 	char hexstring[2];
 	sprintf(hexstring, "%X", (int)c);
@@ -35,7 +36,7 @@ unsigned char toHex(unsigned char c){
 }
 
 /* 
- * this function generates header checksums 
+ * this function generates header checksums decimal value
  * This is an adaptation from Mixter's networking tutorial
  */
 unsigned short checkSum (unsigned short *buf, int n){
@@ -47,6 +48,7 @@ unsigned short checkSum (unsigned short *buf, int n){
 	return ~sum;
 }
 
+//The main method to run the program. 
 int main(){
   int packet_socket;
   //get list of interfaces (actually addresses)
@@ -139,6 +141,7 @@ int main(){
 	}
 	memcpy(&requ.arp_tpa,&target_addr.s_addr,sizeof(requ.arp_tpa));
 
+	//Send the packet back to the origonal host machine. 
 	if (sendto(packet_socket,&requ,sizeof(requ),0,(struct sockaddr*)&device,sizeof(device)) < 0) {
     		printf("%s",strerror(errno));
 	}
